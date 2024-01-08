@@ -21,7 +21,6 @@ begin
     if ( not p_tab.column(i).description.name member of p_exclude_cols or p_exclude_cols is null ) then
       l_column_name         := trim(both '"' from p_tab.column(i).description.name);
 
-      dbms_tf.trace(l_column_name);
       l_key_value_list(j).k := substr(lower(l_column_name),1,1) || substr(replace(initcap(l_column_name),'_'),2);
 
       if ( i < p_tab.column.count ) then
