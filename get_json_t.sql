@@ -73,3 +73,14 @@ begin
   dbms_tf.trace(l_stmt);
   return l_stmt;
 end get_json_t;
+
+select
+  *
+from
+  get_json_t(p_tab              => large_table
+            ,p_exclude_cols     => columns(object_name,owner)
+            ,p_hide_null_values => true
+            ,p_json_column      => new string_type('noot')
+  ) t
+where
+  rownum < 20;
