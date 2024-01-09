@@ -39,7 +39,7 @@ begin
     end if;
   end loop;
 
-  l_stmt := 'select json_object(';
+  l_stmt := 'select t.*, json_object(';
   for i in 1..l_key_value_list.count loop
     l_stmt := l_stmt
               || ''''
@@ -75,7 +75,7 @@ begin
 end get_json_t;
 
 select
-  *
+  t.owner, t.noot
 from
   get_json_t(p_tab              => large_table
             ,p_exclude_cols     => columns(object_name,owner)
