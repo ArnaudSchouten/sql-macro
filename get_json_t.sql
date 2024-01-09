@@ -1,6 +1,6 @@
 create or replace function get_json_t (
   p_tab              in dbms_tf.table_t
- ,p_exclude_cols     in dbms_tf.columns_t
+ ,p_exclude_cols     in dbms_tf.columns_t default null
  ,p_hide_null_values boolean default true
 ) return clob
   sql_macro ( table )
@@ -18,7 +18,7 @@ is
   j                pls_integer := 1;
 begin
   for i in 1..p_tab.column.count loop
-    if ( not p_tab.column(i).description.name member of p_exclude_cols or p_exclude_cols is null ) then
+    if ( p_exclude_cols is null or not p_tab.column(i).description.name member of p_exclude_cols) then
       l_column_name         := trim(both '"' from p_tab.column(i).description.name);
 
       l_key_value_list(j).k := substr(lower(l_column_name),1,1) || substr(replace(initcap(l_column_name),'_'),2);
