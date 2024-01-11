@@ -10,17 +10,16 @@ create or replace function get_json_t (
 , p_hide_null_values in boolean default true
 , p_json_column in string_type default null
 ) return clob sql_macro ( table ) is
-  l_column_name      varchar2(32767);
-  l_json_column_name varchar2(32767);
+  l_column_name    varchar2(32767);
   type key_value_rectype is record (
     k varchar2(1000)
   , v varchar2(1000)
   );
   type key_value_tabtype is
     table of key_value_rectype index by pls_integer;
-  l_key_value_list   key_value_tabtype;
-  l_stmt             varchar2(32767);
-  j                  pls_integer := 1;
+  l_key_value_list key_value_tabtype;
+  l_stmt           varchar2(32767);
+  j                pls_integer := 1;
 begin
   for i in 1..p_tab.column.count loop
     if ( p_exclude_cols is null
@@ -74,39 +73,47 @@ begin
   return l_stmt;
 end get_json_t;
 
+/*
+ examples
+*/
 select
-  t.owner, t.noot
+  t.owner
+, t.noot
 from
-  get_json_t(p_tab              => large_table
-            ,p_exclude_cols     => columns(object_name,owner)
-            ,p_hide_null_values => true
-            ,p_json_column      => new string_type('noot')
-  ) t
+  get_json_t(p_tab => large_table
+, p_exclude_cols => columns(object_name
+, owner)
+, p_hide_null_values => true
+, p_json_column => new string_type('noot') ) t
 where
   rownum < 20;
 
-
-create or replace type string_list as table of varchar2(4000);
+ /*
+   passing with query
+ */   
+create or replace type string_list as
+  table of varchar2(4000);
 /
 
 with data as (
-    select
-        d.deptno
-      , d.dname
-      , cast(multiset(
-            select
-                e.ename
-            from
-                emp e
-            where
-                e.deptno = d.deptno
-        ) as string_list) employees
-    from
-        dept d
+  select
+    d.deptno
+  , d.dname
+  , cast(multiset(
+      select
+        e.ename
+      from
+        emp e
+      where
+        e.deptno = d.deptno
+    ) as string_list) employees
+  from
+    dept d
 )
 select
-    t.*
+  t.*
 from
-    get_json_t(
-        p_tab => data, p_json_column => string_type('aap')
-    ) t
+  get_json_t(
+    p_tab => data
+  , p_json_column => string_type('aap')
+  ) t
