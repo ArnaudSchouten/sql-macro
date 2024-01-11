@@ -84,3 +84,29 @@ from
   ) t
 where
   rownum < 20;
+
+
+create or replace type string_list as table of varchar2(4000);
+/
+
+with data as (
+    select
+        d.deptno
+      , d.dname
+      , cast(multiset(
+            select
+                e.ename
+            from
+                emp e
+            where
+                e.deptno = d.deptno
+        ) as string_list) employees
+    from
+        dept d
+)
+select
+    t.*
+from
+    get_json_t(
+        p_tab => data, p_json_column => string_type('aap')
+    ) t
