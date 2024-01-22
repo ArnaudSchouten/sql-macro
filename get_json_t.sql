@@ -58,10 +58,10 @@ begin
   if ( p_json_column is null ) then
     if ( p_hide_null_values ) then
       l_stmt := l_stmt
-                || ' absent on null) document from p_tab t';
+                || ' absent on null returning clob) document from p_tab t';
     else
       l_stmt := l_stmt
-                || ') document from p_tab t';
+                || ' returning clob) document from p_tab t';
     end if;
   else
     if ( p_hide_null_values ) then
