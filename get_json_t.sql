@@ -66,12 +66,12 @@ begin
   else
     if ( p_hide_null_values ) then
       l_stmt := l_stmt
-                || ' absent on null) '
+                || ' absent on null returning clob) '
                 || p_json_column.v
                 || ' from p_tab t';
     else
       l_stmt := l_stmt
-                || ') '
+                || ' returning clob) '
                 || p_json_column.v
                 || ' from p_tab t';
     end if;
