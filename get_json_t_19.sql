@@ -33,25 +33,29 @@ begin
       l_column_name := trim(both '"' from p_tab.column(i).description.name);
     
       -- camelcase key
-      l_key_value_list(j).k := substr(lower(l_column_name), 1, 1) || substr(replace(initcap(l_column_name), '_'), 2);
-    
-      case
-        when (p_date_columns is not null and p_tab.column(i).description.name member of p_date_columns) then
-          l_key_value_list(j).v := 'to_char(' || p_tab.column(i).description.name || ', ''yyyy-mm-dd''),';
-        when (p_boolean_columns is not null and p_tab.column(i).description.name member of p_boolean_columns) then
-          l_key_value_list(j).v := 'decode(lower('||p_tab.column(i).description.name || '),''j'',''true'', ''ja'',''true'', ''false'') format json,';
-        else
-          l_key_value_list(j).v := p_tab.column(i).description.name || ',';
-      end case;
-    
-      if (i = p_tab.column.count)
-      then
-        l_key_value_list(j).v := rtrim(l_key_value_list(j).v, ',');
-      end if;
-    
+      l_key_value_list(j).k := substr(lower(l_column_name), 1, 1) || substr(replace(initcap(l_column_name), '_'), 2);    
+      -- value
+      l_key_value_list(j).v := case
+        when (
+          p_date_columns is not null
+          and p_tab.column(i).description.name member of p_date_columns
+        ) then
+          'to_char(' || p_tab.column(i).description.name || ', ''yyyy-mm-dd'')'
+        when (
+          p_boolean_columns is not null
+          and p_tab.column(i).description.name member of p_boolean_columns
+        ) then
+          'decode(lower(' || p_tab.column(i).description.name || '),''j'',''true'', ''ja'',''true'', ''y'', ''true'',''false'') format json'
+        else p_tab.column(i).description.name
+      end || ',';    
       j := j + 1;
     end if;
   end loop;
+
+  if (l_key_value_list.exists(1))
+  then
+    l_key_value_list(l_key_value_list.last()).v := rtrim(l_key_value_list(l_key_value_list.last()).v, ',');
+  end if;
 
   l_stmt := 'select t.*, json_object(';
   for i in 1 .. l_key_value_list.count

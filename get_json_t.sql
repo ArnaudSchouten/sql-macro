@@ -44,13 +44,15 @@ begin
         ) then
           'decode(lower(' || p_tab.column(i).description.name || '),''j'',''true'', ''ja'',''true'', ''y'', ''true'',''false'') format json'
         else p_tab.column(i).description.name
-      end || case
-        when i < p_tab.column.count then
-          ','
-      end;
+      end ||',';
       j                     := j + 1;
-    end if;
+    end if;    
   end loop;
+
+  if (l_key_value_list.exists(1))
+  then
+    l_key_value_list(l_key_value_list.last()).v := rtrim(l_key_value_list(l_key_value_list.last()).v, ',');
+  end if;  
 
   l_stmt := 'select t.*, json_object(';
   for i in 1..l_key_value_list.count loop
