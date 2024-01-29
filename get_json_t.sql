@@ -15,62 +15,55 @@ create or replace function get_json_t (
   sql_macro ( table )
 is
 
-  l_column_name    varchar2(32767);
+  l_column_name      varchar2(200);
+  l_json_column_name varchar2(200);
   type key_value_rectype is record (
-      k varchar2(1000)
-    ,v varchar2(1000)
+      k varchar2(200)
+    ,v varchar2(200)
   );
   type key_value_tabtype is
     table of key_value_rectype index by pls_integer;
-  l_key_value_list key_value_tabtype;
-  l_stmt           clob;
-  j                pls_integer := 1;
+  l_key_value_list   key_value_tabtype;
+  l_stmt             clob;
+  j                  pls_integer := 1;
 begin
-  for i in 1..p_tab.column.count loop
-    if ( p_exclude_cols is null or not p_tab.column(i).description.name member of p_exclude_cols ) then
-      l_column_name         := trim(both '"' from p_tab.column(i).description.name);
-
-      l_key_value_list(j).k := substr(lower(l_column_name),1,1) || substr(replace(initcap(l_column_name),'_'),2);
+  l_json_column_name := nvl(p_json_column.v,'document');
+  for col in values of p_tab.column loop
+    if ( p_exclude_cols is null or not col.description.name member of p_exclude_cols ) then
+      l_column_name         := replace(col.description.name,'"','''');
+      l_key_value_list(j).k := substr(lower(l_column_name),1,2) || substr(replace(initcap(l_column_name),'_'),3);
 
       l_key_value_list(j).v := case
         when (
           p_date_columns is not null
-          and p_tab.column(i).description.name member of p_date_columns
+          and col.description.name member of p_date_columns
         ) then
-          'to_char(' || p_tab.column(i).description.name || ', ''yyyy-mm-dd'')'
+          'to_char(' || col.description.name || ', ''yyyy-mm-dd'')'
         when (
           p_boolean_columns is not null
-          and p_tab.column(i).description.name member of p_boolean_columns
+          and col.description.name member of p_boolean_columns
         ) then
-          'decode(lower(' || p_tab.column(i).description.name || '),''j'',''true'', ''ja'',''true'', ''y'', ''true'',''false'') format json'
-        else p_tab.column(i).description.name
-      end ||',';
+          'decode(lower(' || col.description.name || '),''j'',''true'', ''ja'',''true'', ''y'', ''true'',''false'') format json'
+        else col.description.name
+      end || ',';
+
       j                     := j + 1;
-    end if;    
-  end loop;
-
-  if (l_key_value_list.exists(1))
-  then
-    l_key_value_list(l_key_value_list.last()).v := rtrim(l_key_value_list(l_key_value_list.last()).v, ',');
-  end if;  
-
-  l_stmt := 'select t.*, json_object(';
-  for i in 1..l_key_value_list.count loop
-    l_stmt := l_stmt || '''' || l_key_value_list(i).k || ''':' || l_key_value_list(i).v;
-  end loop;
-
-  if ( p_json_column is null ) then
-    if ( p_hide_null_values ) then
-      l_stmt := l_stmt || ' absent on null returning clob) document from p_tab t';
-    else
-      l_stmt := l_stmt || 'returning clob) document from p_tab t';
     end if;
+  end loop;
+
+  if ( l_key_value_list.count() > 0 ) then
+    l_key_value_list(l_key_value_list.last()).v := rtrim(l_key_value_list(l_key_value_list.last()).v,',');
+  end if;
+
+  l_stmt             := 'select t.*, json_object(';
+  for val in values of l_key_value_list loop
+    l_stmt := l_stmt || val.k || ':' || val.v;
+  end loop;
+
+  if ( p_hide_null_values ) then
+    l_stmt := l_stmt || ' absent on null returning clob) ' || l_json_column_name || ' from p_tab t';
   else
-    if ( p_hide_null_values ) then
-      l_stmt := l_stmt || ' absent on null returning clob) ' || p_json_column.v || ' from p_tab t';
-    else
-      l_stmt := l_stmt || 'returning clob) ' || p_json_column.v || ' from p_tab t';
-    end if;
+    l_stmt := l_stmt || 'returning clob) ' || l_json_column_name || ' from p_tab t';
   end if;
 
   dbms_tf.trace(l_stmt);
@@ -120,4 +113,4 @@ from
   get_json_t(
     p_tab => data
   , p_json_column => string_type('aap')
-  ) t
+  ) t;
