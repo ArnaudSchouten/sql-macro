@@ -61,9 +61,9 @@ begin
   end loop;
 
   if ( p_hide_null_values ) then
-    l_stmt := l_stmt || ' absent on null returning clob) ' || l_json_column_name || ' from p_tab t';
+    l_stmt := l_stmt || ' absent on null returning json) ' || l_json_column_name || ' from p_tab t';
   else
-    l_stmt := l_stmt || 'returning clob) ' || l_json_column_name || ' from p_tab t';
+    l_stmt := l_stmt || 'returning json) ' || l_json_column_name || ' from p_tab t';
   end if;
 
   dbms_tf.trace(l_stmt);
