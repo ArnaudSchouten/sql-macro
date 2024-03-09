@@ -83,6 +83,7 @@ CREATE OR REPLACE package body date_utils as
        case rtrim(lower(part), 's')
          when 'year' then floor(months_between(d2, d1) / 12)
          when 'month' then floor(months_between(d2, d1))
+         when 'week' then floor((d2-d1)/7)
          when 'day' then floor(d2-d1)
          when 'hour' then floor((d2-d1)*24)
          when 'minute' then floor((d2-d1)*1440)
