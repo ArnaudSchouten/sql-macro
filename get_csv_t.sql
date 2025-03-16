@@ -1,23 +1,26 @@
 create or replace function get_csv_t (
-   p_tab            in dbms_tf.table_t,
-   p_include_header in boolean default true,
-   p_demiliter      in varchar2 default ',',
-   p_exclude_cols   in dbms_tf.columns_t default null,
-   p_date_columns   in dbms_tf.columns_t default null
+   p_tab             in dbms_tf.table_t,
+   p_include_header  in boolean default true,
+   p_demiliter       in varchar2 default ',',
+   p_exclude_columns in dbms_tf.columns_t default null,
+   p_date_columns    in dbms_tf.columns_t default null
 ) return clob
    sql_macro ( table )
 as
    l_record       clob;
    l_column_name  varchar2(200);
-   l_delimiter    varchar2(1) := nvl(p_demiliter, ',');
+   l_delimiter    varchar2(1) := nvl(
+      p_demiliter,
+      ','
+   );
    l_enclosed_by  varchar2(1) := '"';
    l_header       clob;
    l_sql_template clob;
    l_sql          clob;
 begin
    for col in values of p_tab.column loop
-      if ( p_exclude_cols is null
-      or not col.description.name member of p_exclude_cols ) then
+      if ( p_exclude_columns is null
+      or not col.description.name member of p_exclude_columns ) then
          l_column_name := replace(
             col.description.name,
             '"'
@@ -100,25 +103,25 @@ begin
    if ( p_include_header ) then
       l_sql_template := q'[
                 with d as (
-                select '#HEADER#' as csv_row, 1 as row_order from dual 
+                select '%HEADER%' as csv_row, 1 as row_order from dual 
                 union all 
-                select #RECORD# as csv_row , 2 as row_order from p_tab
+                select %RECORD% as csv_row , 2 as row_order from p_tab
                 ) 
                 select csv_row from d order by row_order
            ]';
    else
       l_sql_template := q'[
-                 select #RECORD# as csv_row from p_tab
+                 select %RECORD% as csv_row from p_tab
               ]';
    end if;
 
    l_sql := replace(
       replace(
          l_sql_template,
-         '#HEADER#',
+         '%HEADER%',
          l_header
       ),
-      '#RECORD#',
+      '%RECORD%',
       l_record
    );
 
