@@ -47,25 +47,27 @@ create or replace function get_csv_t (
    l_settings         t_settings;
 begin
    -- get the settings
-   for i in 1..p_settings.count() loop
-      l_setting := trim(both '"' from p_settings(i));
-      l_settings(regexp_substr(
-         l_setting,
-         '^(.*)\|',
-         1,
-         1,
-         null,
-         1
-      )) := regexp_substr(
-         l_setting,
-         '\|(.*)',
-         1,
-         1,
-         null,
-         1
-      );
-   end loop;
+   if ( p_settings is not null ) then
+      for i in 1..p_settings.count() loop
+         l_setting := trim(both '"' from p_settings(i));
+         l_settings(regexp_substr(
+            l_setting,
+            '^(.*)\|',
+            1,
+            1,
+            null,
+            1
+         )) := regexp_substr(
+            l_setting,
+            '\|(.*)',
+            1,
+            1,
+            null,
+            1
+         );
 
+      end loop;
+   end if;
   -- set the delimiter
    if ( l_settings.exists('delimiter') ) then
       l_delimiter := nvl(
@@ -73,6 +75,7 @@ begin
          c_delimiter
       );
    end if;
+
    l_delimiter_record := '||'''
                          || l_delimiter
                          || '''||';
@@ -83,6 +86,7 @@ begin
          c_date_format
       );
    end if;
+
    l_datetime_format := l_date_format || ' hh24:mi:ss';
    l_timestamp_format := l_datetime_format || '.ff';
 
@@ -97,8 +101,7 @@ begin
    end if;
 
    for i in 1..p_tab.column.count() loop
-      l_column_name := trim(both '"' from p_tab.column(i).description.name);
-
+      l_column_name := p_tab.column(i).description.name;
       case
     -- strings
          when ( p_tab.column(i).description.type in ( dbms_tf.type_varchar2,
@@ -112,10 +115,11 @@ begin
                            || '||'''
                            || c_enclosed_by
                            || '''';
+
             else
                l_column := l_column_name;
             end if;
-      
+
     -- numbers  
          when ( p_tab.column(i).description.type in ( dbms_tf.type_number,
                                                       dbms_tf.type_binary_float,
@@ -123,7 +127,7 @@ begin
             l_column := 'to_char('
                         || l_column_name
                         || ')';
-      
+
     -- dates
          when ( p_tab.column(i).description.type = dbms_tf.type_date ) then
             if (
@@ -142,7 +146,7 @@ begin
                            || l_datetime_format
                            || ''')';
             end if;
-      
+
     -- timestamps
          when ( p_tab.column(i).description.type = dbms_tf.type_timestamp ) then
             l_column := 'to_char('
@@ -153,22 +157,15 @@ begin
          else
             l_column := l_column_name;
       end case;
-  
+
     -- header
       if ( l_include_header ) then
-         if ( l_enclosed_by ) then
-            l_header := l_header
-                        || c_enclosed_by
-                        || l_column_name
-                        || c_enclosed_by;
-         else
-            l_header := l_header || l_column_name;
-         end if;
+         l_header := l_header || l_column_name;
       end if;
-  
+
     -- record
       l_record := l_record || l_column;
-  
+
     -- add delimiter
       if ( i < p_tab.column.count() ) then
          if ( l_include_header ) then
@@ -176,6 +173,7 @@ begin
          end if;
          l_record := l_record || l_delimiter_record;
       end if;
+
    end loop;
 
    if ( l_include_header ) then
@@ -203,6 +201,6 @@ begin
       l_record
    );
 
-   dbms_output.put_line(l_sql);
+   dbms_tf.trace(l_sql);
    return l_sql;
 end get_csv_t;
