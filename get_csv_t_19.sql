@@ -111,8 +111,7 @@ begin
             if ( l_enclosed_by ) then
                l_column := ''''
                            || c_enclosed_by
-                           || '''||'
-                           || l_column_name
+                           || '''||replace('|| l_column_name ||','''||c_enclosed_by||''','''||c_enclosed_by||c_enclosed_by||''')'
                            || '||'''
                            || c_enclosed_by
                            || '''';
@@ -202,6 +201,6 @@ begin
     l_record
   );
 
-   dbms_tf.trace(l_sql);
+   dbms_output.put_line(trim(regexp_replace(l_sql, '\s+', ' ')));
    return l_sql;
 end get_csv_t;
